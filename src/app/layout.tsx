@@ -1,27 +1,55 @@
-import type { Metadata } from 'next'
-import { Inter, Outfit, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
-const outfit = Outfit({ subsets: ['latin'], variable: '--font-display' })
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase-server'
 
 export const metadata: Metadata = {
-  title: 'JAMBOO Match',
-  description: 'La aplicación de citas definitiva para JAMBOO.',
+  title: 'JAMBOO Fiesta',
+  description: 'Comparte las fotos de la fiesta',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   return (
-    <html lang="es" className="dark">
-      <body className={`${inter.variable} ${outfit.variable} ${mono.variable} font-sans min-h-screen bg-night selection:bg-neon-cyan/30`}>
-        <div className="max-w-md mx-auto min-h-screen relative border-x border-white/5">
-          {children}
-        </div>
+    <html lang="es">
+      <body className="min-h-screen bg-neutral-950 text-neutral-100">
+        <header className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-neutral-900">
+          <nav className="max-w-5xl mx-auto flex items-center justify-between p-4">
+            <Link href="/" className="font-bold text-xl">
+              JAMBOO
+            </Link>
+            <div className="flex items-center gap-3 text-sm">
+              <Link href="/upload" className="px-3 py-1.5 rounded-lg bg-white text-black font-semibold">
+                Subir foto
+              </Link>
+              {user ? (
+                <>
+                  <Link href="/profile" className="px-3 py-1.5 rounded-lg border border-neutral-700">
+                    Mi perfil
+                  </Link>
+                  <form action="/auth/logout" method="post">
+                    <button className="px-3 py-1.5 rounded-lg border border-neutral-800 text-neutral-400">
+                      Salir
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link href="/login" className="px-3 py-1.5 rounded-lg border border-neutral-700">
+                  Entrar
+                </Link>
+              )}
+            </div>
+          </nav>
+        </header>
+        <main className="max-w-5xl mx-auto p-4">{children}</main>
       </body>
     </html>
   )
