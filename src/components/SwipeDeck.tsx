@@ -11,15 +11,25 @@ interface MatchedUser {
   phone: string
 }
 
+const DEMO_MATCH: MatchedUser = {
+  id: 'demo-match',
+  name: 'María 💃',
+  photo_url: null,
+  phone: '+34 600 000 000',
+}
+
 export default function SwipeDeck({
   users,
   currentUserId,
+  isDemo = false,
 }: {
   users: CardUser[]
   currentUserId: string
+  isDemo?: boolean
 }) {
   const [index, setIndex] = useState(0)
   const [matchData, setMatchData] = useState<MatchedUser | null>(null)
+  const [demoLikes, setDemoLikes] = useState(0)
 
   const handleSwipe = useCallback(
     async (liked: boolean) => {
@@ -27,6 +37,19 @@ export default function SwipeDeck({
       if (!user) return
 
       setIndex((i) => i + 1)
+
+      // ── DEMO MODE: simular match en el 2º like ─────────────────
+      if (isDemo && liked) {
+        setDemoLikes((prev) => {
+          const next = prev + 1
+          if (next === 2) {
+            setTimeout(() => setMatchData(DEMO_MATCH), 300)
+          }
+          return next
+        })
+        return
+      }
+      // ───────────────────────────────────────────────────────────
 
       if (liked) {
         try {
@@ -48,10 +71,9 @@ export default function SwipeDeck({
         }).catch(console.error)
       }
     },
-    [index, users, currentUserId],
+    [index, users, currentUserId, isDemo],
   )
 
-  // Stack: muestra hasta 3 cartas
   const visible = users.slice(index, index + 3)
 
   if (index >= users.length) {
@@ -62,6 +84,11 @@ export default function SwipeDeck({
         <p className="text-neutral-500 text-sm">
           Vuelve más tarde si se unen nuevos asistentes.
         </p>
+        {isDemo && (
+          <p className="text-yellow-400 text-xs mt-2">
+            ⚡ Modo demo — conecta Supabase para datos reales
+          </p>
+        )}
       </div>
     )
   }
@@ -71,10 +98,7 @@ export default function SwipeDeck({
       {/* Card stack */}
       <div
         className="relative"
-        style={{
-          width: 'min(380px, 90vw)',
-          height: 'min(520px, 65vh)',
-        }}
+        style={{ width: 'min(380px, 90vw)', height: 'min(520px, 65vh)' }}
       >
         {[...visible].reverse().map((user, revIdx) => {
           const depth = visible.length - 1 - revIdx
@@ -91,7 +115,7 @@ export default function SwipeDeck({
         })}
       </div>
 
-      {/* Action buttons */}
+      {/* Botones */}
       <div className="flex items-center gap-10">
         <button
           onClick={() => handleSwipe(false)}
@@ -100,7 +124,6 @@ export default function SwipeDeck({
         >
           ✕
         </button>
-
         <button
           onClick={() => handleSwipe(true)}
           aria-label="Like"
@@ -112,14 +135,11 @@ export default function SwipeDeck({
         >
           ♥
         </button>
-
-        {/* Contador */}
-        <div className="w-16 h-16 flex items-center justify-center text-neutral-600 text-sm text-center">
-          {users.length - index} <br /> restantes
+        <div className="w-16 h-16 flex items-center justify-center text-neutral-600 text-sm text-center leading-tight">
+          {users.length - index}<br />left
         </div>
       </div>
 
-      {/* Hint */}
       <p className="text-xs text-neutral-700">Desliza o usa los botones</p>
 
       {matchData && (

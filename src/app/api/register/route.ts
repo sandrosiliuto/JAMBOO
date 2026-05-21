@@ -12,35 +12,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nombre y teléfono son obligatorios' }, { status: 400 })
     }
 
+    // ── DEMO MODE (sin variables de entorno) ──────────────────────
+    const isDemoMode =
+      !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (isDemoMode) {
+      const id = `demo-${crypto.randomUUID()}`
+      const response = NextResponse.json({ user: { id, name, photo_url: null } })
+      response.cookies.set('party_user_id', id, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 8,
+        path: '/',
+      })
+      return response
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const supabase = createServiceClient()
     let photoUrl: string | null = null
 
-    // Subir foto si se proporcionó
     if (photo && photo.size > 0) {
       try {
         const bytes = await photo.arrayBuffer()
         const buffer = Buffer.from(bytes)
         const filename = `${crypto.randomUUID()}.jpg`
-
         const { error: uploadError } = await supabase.storage
           .from('party-photos')
-          .upload(filename, buffer, {
-            contentType: 'image/jpeg',
-            cacheControl: '31536000',
-            upsert: false,
-          })
-
+          .upload(filename, buffer, { contentType: 'image/jpeg', cacheControl: '31536000' })
         if (!uploadError) {
           const { data: { publicUrl } } = supabase.storage
-            .from('party-photos')
-            .getPublicUrl(filename)
+            .from('party-photos').getPublicUrl(filename)
           photoUrl = publicUrl
         }
-        // Si falla la foto, continuamos sin foto (no bloqueamos el registro)
-      } catch { /* upload error no fatal */ }
+      } catch { /* foto no bloqueante */ }
     }
 
-    // Insertar usuario
     const { data: user, error } = await supabase
       .from('party_users')
       .insert({ name, phone, photo_url: photoUrl })
@@ -48,14 +54,9 @@ export async function POST(req: Request) {
       .single()
 
     if (error) {
-      console.error('DB insert error:', error)
-      return NextResponse.json(
-        { error: `Error de base de datos: ${error.message}` },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: `DB: ${error.message}` }, { status: 500 })
     }
 
-    // Setear cookie de sesión (8 horas — una noche)
     const response = NextResponse.json({ user })
     response.cookies.set('party_user_id', user.id, {
       httpOnly: true,
@@ -65,8 +66,7 @@ export async function POST(req: Request) {
     })
     return response
   } catch (err) {
-    console.error('Register fatal error:', err)
-    const message = err instanceof Error ? err.message : 'Error interno del servidor'
+    const message = err instanceof Error ? err.message : 'Error interno'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
