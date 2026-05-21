@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 
-export async function POST() {
-  const response = NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'), { status: 303 })
+export async function POST(req: Request) {
+  // Redirigir a la raíz del mismo dominio
+  const url = new URL(req.url)
+  const response = NextResponse.redirect(
+    `${url.protocol}//${url.host}/`,
+    { status: 303 },
+  )
   response.cookies.delete('party_user_id')
   return response
 }

@@ -18,10 +18,16 @@ export default function RegisterForm() {
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const compressed = await compressImage(file, { maxSize: 800, quality: 0.82 })
-    const compressedFile = new File([compressed], 'photo.jpg', { type: 'image/jpeg' })
-    setPhoto(compressedFile)
-    setPreview(URL.createObjectURL(compressed))
+    try {
+      const compressed = await compressImage(file, { maxSize: 800, quality: 0.82 })
+      const compressedFile = new File([compressed], 'photo.jpg', { type: 'image/jpeg' })
+      setPhoto(compressedFile)
+      setPreview(URL.createObjectURL(compressed))
+    } catch {
+      // Si la compresión falla, usar el archivo original
+      setPhoto(file)
+      setPreview(URL.createObjectURL(file))
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,20 +36,32 @@ export default function RegisterForm() {
     setLoading(true)
     setError('')
 
-    const fd = new FormData()
-    fd.append('name', name)
-    fd.append('phone', phone)
-    if (photo) fd.append('photo', photo)
+    try {
+      const fd = new FormData()
+      fd.append('name', name)
+      fd.append('phone', phone)
+      if (photo) fd.append('photo', photo)
 
-    const res = await fetch('/api/register', { method: 'POST', body: fd })
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? 'Error al registrarte')
+      const res = await fetch('/api/register', { method: 'POST', body: fd })
+
+      if (!res.ok) {
+        let message = `Error del servidor (${res.status})`
+        try {
+          const data = await res.json()
+          message = data.error ?? message
+        } catch { /* la respuesta no es JSON */ }
+        setError(message)
+        setLoading(false)
+        return
+      }
+
+      // Registro OK → ir a descubrir
+      router.push('/discover')
+    } catch (err) {
+      console.error('Register error:', err)
+      setError('Error de conexión. Comprueba tu internet e inténtalo de nuevo.')
       setLoading(false)
-      return
     }
-
-    router.push('/discover')
   }
 
   return (
@@ -77,17 +95,15 @@ export default function RegisterForm() {
       </div>
 
       {/* Nombre */}
-      <div>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Tu nombre"
-          required
-          maxLength={30}
-          className="w-full px-4 py-3 rounded-xl bg-[#080810] border border-[#2a2a50] focus:border-[#00e5ff] outline-none transition placeholder-neutral-600"
-        />
-      </div>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Tu nombre"
+        required
+        maxLength={30}
+        className="w-full px-4 py-3 rounded-xl bg-[#080810] border border-[#2a2a50] focus:border-[#00e5ff] outline-none transition placeholder-neutral-600"
+      />
 
       {/* WhatsApp */}
       <div>
@@ -100,7 +116,7 @@ export default function RegisterForm() {
           className="w-full px-4 py-3 rounded-xl bg-[#080810] border border-[#2a2a50] focus:border-[#00e5ff] outline-none transition placeholder-neutral-600"
         />
         <p className="text-xs text-neutral-600 mt-1 ml-1">
-          Solo se comparte si hay un match
+          Solo se comparte si hay un match mutuo
         </p>
       </div>
 
@@ -117,15 +133,20 @@ export default function RegisterForm() {
         </span>
       </label>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {/* Error */}
+      {error && (
+        <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-xl px-4 py-2">
+          ⚠️ {error}
+        </p>
+      )}
 
       <button
         type="submit"
         disabled={loading || !name || !phone}
-        className="w-full py-3.5 rounded-2xl font-black text-black disabled:opacity-40 transition hover:opacity-90"
+        className="w-full py-3.5 rounded-2xl font-black text-black disabled:opacity-40 transition hover:opacity-90 active:scale-95"
         style={{ background: 'linear-gradient(135deg, #00e5ff, #ff00c8)' }}
       >
-        {loading ? 'Entrando...' : '¡Unirse a la fiesta!'}
+        {loading ? '⏳ Entrando...' : '¡Unirse a la fiesta! 🎉'}
       </button>
     </form>
   )
