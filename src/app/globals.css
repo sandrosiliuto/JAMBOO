@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+@theme {
+  --color-cyan-party: #00e5ff;
+  --color-fuchsia-party: #ff00c8;
+  --color-bg: #080810;
+  --color-card: #13132a;
+  --color-border: #2a2a50;
+}
+
 :root {
   color-scheme: dark;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: #f0f0f0;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, #00e5ff, #ff00c8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Neon glow utilities */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+}
+.glow-fuchsia {
+  box-shadow: 0 0 20px rgba(255, 0, 200, 0.3);
+}
+
+/* Card border gradient */
+.card-border {
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  background: linear-gradient(145deg, #13132a, #1a1a3a);
 }
