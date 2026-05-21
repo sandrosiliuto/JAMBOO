@@ -3,6 +3,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-server'
 
+// El layout consulta Supabase en cada request: no pre-renderizar estáticamente.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'JAMBOO Fiesta',
   description: 'Comparte las fotos de la fiesta',

@@ -1,6 +1,0 @@
-{
-  "name": "JAMBOO Match",
-  "description": "La aplicación de citas definitiva para JAMBOO. Swipe, match, y chat en tiempo real con una estética neon brutalista.",
-  "requestFramePermissions": ["camera"],
-  "majorCapabilities": []
-}

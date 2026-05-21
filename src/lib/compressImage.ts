@@ -14,20 +14,22 @@ export async function compressImage(
     height = Math.round(height * ratio)
   }
 
-  const canvas =
-    typeof OffscreenCanvas !== 'undefined'
-      ? new OffscreenCanvas(width, height)
-      : Object.assign(document.createElement('canvas'), { width, height })
-  // @ts-expect-error union de canvas
+  if (typeof OffscreenCanvas !== 'undefined') {
+    const canvas = new OffscreenCanvas(width, height)
+    const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D | null
+    if (!ctx) throw new Error('No se pudo obtener contexto 2D')
+    ctx.drawImage(bitmap, 0, 0, width, height)
+    return canvas.convertToBlob({ type: 'image/jpeg', quality })
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('No se pudo obtener contexto 2D')
   ctx.drawImage(bitmap, 0, 0, width, height)
-
-  if (canvas instanceof OffscreenCanvas) {
-    return await canvas.convertToBlob({ type: 'image/jpeg', quality })
-  }
-  return await new Promise<Blob>((resolve, reject) => {
-    ;(canvas as HTMLCanvasElement).toBlob(
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('toBlob falló'))),
       'image/jpeg',
       quality,
